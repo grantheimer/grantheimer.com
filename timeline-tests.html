@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Timeline Unit Tests</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+            color: #222;
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        #testSummary {
+            margin: 10px 0 20px;
+            font-weight: 600;
+        }
+        .test-pass { color: #15803d; }
+        .test-fail { color: #b91c1c; }
+        ul { padding-left: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Timeline Unit Tests</h1>
+    <div id="testSummary">Running tests...</div>
+    <ul id="testResults"></ul>
+
+    <!-- Load the actual app in a hidden iframe so we can test real functions & DOM -->
+    <iframe id="appFrame" src="index.html" style="width:0;height:0;border:0;visibility:hidden;"></iframe>
+
+    <script>
+    (function () {
+        const results = [];
+
+        function addResult(passed, message) {
+            results.push({ passed: !!passed, message: message });
+            console[passed ? 'log' : 'error']((passed ? 'PASS: ' : 'FAIL: ') + message);
+        }
+
+        function assert(condition, message) {
+            if (!condition) {
+                throw new Error(message || 'Assertion failed');
+            }
+        }
+
+        function assertEqual(actual, expected, message) {
+            if (actual !== expected) {
+                throw new Error((message || 'Expected values to be equal') + ' (expected: ' + expected + ', actual: ' + actual + ')');
+            }
+        }
+
+        function assertApproxEqual(actual, expected, epsilon, message) {
+            if (Math.abs(actual - expected) > epsilon) {
+                throw new Error((message || 'Expected values to be approximately equal') + ' (expected: ' + expected + ', actual: ' + actual + ')');
+            }
+        }
+
+        function renderResults() {
+            const list = document.getElementById('testResults');
+            const summary = document.getElementById('testSummary');
+            list.innerHTML = '';
+
+            let passedCount = 0;
+            results.forEach(r => {
+                const li = document.createElement('li');
+                li.textContent = r.message;
+                li.className = r.passed ? 'test-pass' : 'test-fail';
+                list.appendChild(li);
+                if (r.passed) passedCount++;
+            });
+
+            summary.textContent = 'Passed ' + passedCount + ' of ' + results.length + ' tests.';
+            summary.className = passedCount === results.length ? 'test-pass' : 'test-fail';
+        }
+
+        function runTests(win, doc) {
+            const tests = [
+                {
+                    name: 'parseDate parses Month Year strings and Present correctly',
+                    fn: function () {
+                        const parseDate = win.parseDate;
+
+                        const jan2009 = parseDate('January 2009');
+                        assertEqual(jan2009, 2009, 'January 2009 should map to 2009.0');
+
+                        const june2017 = parseDate('June 2017');
+                        const expectedJune2017 = 2017 + (5 / 12); // June is month index 5 (0-based)
+                        assertApproxEqual(june2017, expectedJune2017, 1e-6, 'June 2017 should map to 2017 + 5/12');
+
+                        const dec2010 = parseDate('December 2010');
+                        const expectedDec2010 = 2010 + (11 / 12);
+                        assertApproxEqual(dec2010, expectedDec2010, 1e-6, 'December 2010 should map to 2010 + 11/12');
+
+                        const present = parseDate('Present');
+                        assertEqual(present, 2026, 'Present should map to END_YEAR (2026)');
+                    }
+                },
+                {
+                    name: 'yearToPixels converts decimal years to pixel positions',
+                    fn: function () {
+                        const yearToPixels = win.yearToPixels;
+
+                        // Configuration from index.html
+                        const START_YEAR = 2009;
+                        const YEAR_HEIGHT = 800;
+
+                        assertEqual(yearToPixels(START_YEAR), 0, 'Start year should map to 0px');
+                        assertEqual(yearToPixels(START_YEAR + 1), YEAR_HEIGHT, 'One year after start should map to 800px');
+
+                        const halfYearPixels = yearToPixels(START_YEAR + 0.5);
+                        assertApproxEqual(halfYearPixels, YEAR_HEIGHT / 2, 1e-6, 'Half year offset should map to half of YEAR_HEIGHT');
+                    }
+                },
+                {
+                    name: 'processColumn adds decimal years, type, and formatted dates',
+                    fn: function () {
+                        const processColumn = win.processColumn;
+                        const parseDate = win.parseDate;
+
+                        const entries = [
+                            {
+                                title: 'Sample Entry',
+                                shortTitle: 'Sample',
+                                icon: '📍',
+                                start: 'January 2020',
+                                end: 'June 2020',
+                                description: 'Test description'
+                            },
+                            {
+                                title: 'Second Entry',
+                                shortTitle: 'Second',
+                                icon: '📍',
+                                start: 'June 2020',
+                                end: 'Present',
+                                description: 'Second description'
+                            }
+                        ];
+
+                        const processed = processColumn(entries, 'city');
+                        assertEqual(processed.length, entries.length, 'processColumn should return same number of entries');
+
+                        const first = processed[0];
+                        assertEqual(first.type, 'city', 'Type should be set from argument');
+                        assertEqual(first.dates, 'January 2020 - June 2020', 'Dates string should be formatted correctly');
+                        assertApproxEqual(first.startDecimal, parseDate('January 2020'), 1e-6, 'startDecimal should match parsed start');
+                        assertApproxEqual(first.endDecimal, parseDate('June 2020'), 1e-6, 'endDecimal should match parsed end');
+
+                        const second = processed[1];
+                        assertEqual(second.dates, 'June 2020 - Present', 'Second dates string should be formatted correctly');
+                        assertApproxEqual(second.endDecimal, parseDate('Present'), 1e-6, 'endDecimal should be END_YEAR for Present');
+                    }
+                },
+                {
+                    name: 'buildTimeline generates correct year markers and timeline nodes',
+                    fn: function () {
+                        const doc = win.document;
+                        const timelineData = win.timelineData;
+
+                        const container = doc.getElementById('timelineContainer');
+                        assert(container, 'timelineContainer should exist');
+
+                        // Year markers from START_YEAR to END_YEAR inclusive
+                        const yearMarkers = doc.querySelectorAll('.year-marker');
+                        assertEqual(yearMarkers.length, 18, 'There should be 18 year markers from 2009 to 2026 inclusive');
+
+                        // Column lane counts
+                        const cityLanes = doc.querySelectorAll('.entry-lane.city-lane');
+                        const educationLanes = doc.querySelectorAll('.entry-lane.education-lane');
+                        const workLanes = doc.querySelectorAll('.entry-lane.work-lane');
+
+                        assertEqual(cityLanes.length, timelineData.cities.length, 'City lanes count should match cities entries');
+                        assertEqual(educationLanes.length, timelineData.education.length, 'Education lanes count should match education entries');
+                        assertEqual(workLanes.length, timelineData.work.length, 'Work lanes count should match work entries');
+
+                        // Check one city node has correct data attributes
+                        const firstCityLane = cityLanes[0];
+                        const firstCityNode = firstCityLane.querySelector('.timeline-node');
+                        assert(firstCityNode, 'Each city lane should contain a timeline-node');
+
+                        const firstCityData = timelineData.cities[0];
+                        assertEqual(firstCityNode.dataset.type, 'city', 'City node data-type should be city');
+                        assertEqual(firstCityNode.dataset.title, firstCityData.title, 'City node data-title should match data');
+                        assertEqual(firstCityNode.dataset.dates, firstCityData.start + ' - ' + firstCityData.end, 'City node data-dates should be formatted start - end');
+
+                        // Container height should match configured year span
+                        const expectedHeight = (2026 - 2009) * 800;
+                        assertEqual(container.style.height, expectedHeight + 'px', 'Timeline container height should match total year span in pixels');
+                    }
+                },
+                {
+                    name: 'openModal and closeModal toggle visibility and update content correctly',
+                    fn: function () {
+                        const doc = win.document;
+
+                        const modalOverlay = doc.getElementById('modalOverlay');
+                        const modalContent = doc.getElementById('modalContent');
+                        const modalTitle = doc.getElementById('modalTitle');
+                        const modalDates = doc.getElementById('modalDates');
+                        const modalDescription = doc.getElementById('modalDescription');
+
+                        assert(modalOverlay && modalContent && modalTitle && modalDates && modalDescription, 'Modal elements should exist');
+
+                        // Reset state
+                        modalOverlay.classList.remove('active');
+                        doc.body.style.overflow = '';
+
+                        win.openModal('city', 'Test Title', 'January 2020 - June 2020', 'Test description');
+
+                        assert(modalOverlay.classList.contains('active'), 'Modal overlay should be active after openModal');
+                        assert(modalContent.className.indexOf('modal-content city-modal') !== -1, 'Modal content should have city-modal class');
+                        assertEqual(modalTitle.textContent, 'Test Title', 'Modal title should be updated');
+                        assertEqual(modalDates.style.display, 'none', 'Modal dates should be hidden');
+                        assertEqual(modalDescription.textContent, 'Test description', 'Modal description should be updated');
+                        assertEqual(doc.body.style.overflow, 'hidden', 'Body overflow should be hidden when modal is open');
+
+                        win.closeModal();
+
+                        assert(!modalOverlay.classList.contains('active'), 'Modal overlay should not be active after closeModal');
+                        assertEqual(doc.body.style.overflow, '', 'Body overflow should be reset after closeModal');
+                    }
+                }
+            ];
+
+            tests.forEach(function (t) {
+                try {
+                    t.fn();
+                    addResult(true, t.name);
+                } catch (e) {
+                    addResult(false, t.name + ' - ' + e.message);
+                }
+            });
+
+            renderResults();
+        }
+
+        window.addEventListener('load', function () {
+            const frame = document.getElementById('appFrame');
+            frame.addEventListener('load', function () {
+                const win = frame.contentWindow;
+                const doc = win.document;
+                runTests(win, doc);
+            });
+        });
+    })();
+    </script>
+</body>
+</html>
