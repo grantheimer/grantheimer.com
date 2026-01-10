@@ -623,15 +623,27 @@
         .timeline-nav {
             position: fixed;
             top: 0;
+            left: 0;
             width: 100%;
-            padding: 20px 50px;
+            padding: 15px 50px;
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            gap: 30px;
             z-index: 1000;
             background: rgba(10, 15, 30, 0.85);
             backdrop-filter: blur(20px);
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .timeline-nav a {
+            color: var(--white);
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 400;
+            transition: color 0.2s ease;
+        }
+
+        .timeline-nav a:hover {
+            color: var(--cyan);
         }
 
         /* Footer - only shown on timeline page */
@@ -667,11 +679,7 @@
             }
 
             .timeline-nav {
-                padding: 20px;
-            }
-
-            .nav-links {
-                gap: 20px;
+                padding: 20px 30px;
             }
 
             .year-marker {
@@ -836,11 +844,8 @@
         <div class="bg-gradient" id="bgGradient"></div>
 
         <nav class="timeline-nav">
-            <a href="/" class="logo" onclick="showHome(); return false;">Grant Heimer</a>
-            <div class="nav-links">
-                <a href="/" onclick="showHome(); return false;">Home</a>
-                <a href="/timeline" onclick="showTimeline(); return false;">Timeline</a>
-            </div>
+            <a href="/" onclick="showHome(); return false;">Home</a>
+            <a href="/timeline" onclick="showTimeline(); return false;">Timeline</a>
         </nav>
 
         <section class="hero">
