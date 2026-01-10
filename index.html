@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Grant Heimer</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='white'/><text x='50' y='58' font-family='Georgia, serif' font-size='36' font-weight='bold' fill='%230a0f1e' text-anchor='middle'>GH</text></svg>">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;0,6..72,700;1,6..72,400&display=swap" rel="stylesheet">
@@ -67,6 +68,7 @@
             cursor: pointer;
             transition: all 0.3s ease;
             letter-spacing: 0.01em;
+            text-decoration: none;
         }
 
         .logo:hover {
@@ -360,6 +362,18 @@
             border: 2px solid var(--navy-bg);
             opacity: 0.8;
             padding-bottom: 2px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 0.8;
+            }
+            50% {
+                transform: scale(1.15);
+                opacity: 1;
+            }
         }
 
         /* Education modal style */
@@ -665,44 +679,44 @@
                 padding: 8px 12px;
             }
 
-            /* Mobile: Smaller circles (90px) to fit all three columns */
+            /* Mobile: Larger circles (110px) for better text readability */
             .node-circle {
-                width: 90px;
-                height: 90px;
-                padding: 10px;
-                border-width: 2px;
+                width: 110px;
+                height: 110px;
+                padding: 12px;
+                border-width: 3px;
             }
 
             .node-circle .node-icon {
-                font-size: 20px;
-                margin-bottom: 3px;
+                font-size: 24px;
+                margin-bottom: 4px;
             }
 
             .node-circle .node-title {
-                font-size: 10px;
+                font-size: 11px;
             }
 
             .node-circle .click-indicator {
-                width: 24px;
-                height: 24px;
-                font-size: 22px;
-                bottom: 3px;
-                right: 3px;
+                width: 28px;
+                height: 28px;
+                font-size: 24px;
+                bottom: 4px;
+                right: 4px;
             }
 
-            /* Adjust column widths for mobile (half of 90px node + 5px gap = 50px offset) */
+            /* Adjust column widths for mobile (half of 110px node + 10px gap = 65px offset) */
             .entry-lane.city-lane {
                 left: 0;
-                width: calc(50% - 55px);
+                width: calc(50% - 65px);
             }
 
             .entry-lane.education-lane {
-                width: 90px;
+                width: 110px;
             }
 
             .entry-lane.work-lane {
-                left: calc(50% + 55px);
-                width: calc(50% - 55px);
+                left: calc(50% + 65px);
+                width: calc(50% - 65px);
             }
 
             .modal-content {
@@ -721,38 +735,38 @@
         /* Extra small screens */
         @media (max-width: 400px) {
             .node-circle {
-                width: 75px;
-                height: 75px;
-                padding: 8px;
+                width: 90px;
+                height: 90px;
+                padding: 10px;
             }
 
             .node-circle .node-icon {
-                font-size: 16px;
-                margin-bottom: 2px;
+                font-size: 20px;
+                margin-bottom: 3px;
             }
 
             .node-circle .node-title {
-                font-size: 9px;
+                font-size: 10px;
             }
 
             .node-circle .click-indicator {
-                width: 18px;
-                height: 18px;
-                font-size: 16px;
+                width: 22px;
+                height: 22px;
+                font-size: 18px;
             }
 
-            /* Smaller offset for tiny screens (half of 75px + 5px gap = 42.5px) */
+            /* Offset for small screens (half of 90px + 5px gap = 50px) */
             .entry-lane.city-lane {
-                width: calc(50% - 45px);
+                width: calc(50% - 50px);
             }
 
             .entry-lane.education-lane {
-                width: 75px;
+                width: 90px;
             }
 
             .entry-lane.work-lane {
-                left: calc(50% + 45px);
-                width: calc(50% - 45px);
+                left: calc(50% + 50px);
+                width: calc(50% - 50px);
             }
 
             .year-marker {
@@ -766,8 +780,8 @@
     <!-- New Home Page -->
     <div id="homePage" class="home-page">
         <nav class="home-nav">
-            <a href="#" onclick="showHome(); return false;">Home</a>
-            <a href="#" onclick="showTimeline(); return false;">Timeline</a>
+            <a href="/" onclick="showHome(); return false;">Home</a>
+            <a href="/timeline" onclick="showTimeline(); return false;">Timeline</a>
         </nav>
         
         <div class="home-container">
@@ -822,10 +836,10 @@
         <div class="bg-gradient" id="bgGradient"></div>
 
         <nav class="timeline-nav">
-            <div class="logo" onclick="showHome()">Grant Heimer</div>
+            <a href="/" class="logo" onclick="showHome(); return false;">Grant Heimer</a>
             <div class="nav-links">
-                <a href="#" onclick="showHome(); return false;">Home</a>
-                <a href="#" onclick="showTimeline(); return false;">Timeline</a>
+                <a href="/" onclick="showHome(); return false;">Home</a>
+                <a href="/timeline" onclick="showTimeline(); return false;">Timeline</a>
             </div>
         </nav>
 
@@ -1039,6 +1053,10 @@
         function addTimelineClickHandlers() {
             document.querySelectorAll('.timeline-node').forEach(node => {
                 node.addEventListener('click', function() {
+                    // Haptic feedback for supported devices
+                    if ('vibrate' in navigator) {
+                        navigator.vibrate(10);
+                    }
                     openModal(
                         this.dataset.type,
                         this.dataset.title,
@@ -1079,19 +1097,44 @@
         });
 
         // Page navigation
-        function showHome() {
+        function showHome(pushState = true) {
             document.getElementById('homePage').classList.remove('hidden');
             document.getElementById('timelinePage').classList.remove('active');
             document.body.style.background = '#ffffff';
             window.scrollTo(0, 0);
+            if (pushState) {
+                history.pushState({page: 'home'}, '', '/');
+            }
         }
 
-        function showTimeline() {
+        function showTimeline(pushState = true) {
             document.getElementById('homePage').classList.add('hidden');
             document.getElementById('timelinePage').classList.add('active');
             document.body.style.background = 'var(--navy-bg)';
             window.scrollTo(0, 0);
+            if (pushState) {
+                history.pushState({page: 'timeline'}, '', '/timeline');
+            }
         }
+
+        // Handle browser back/forward buttons
+        window.addEventListener('popstate', function(e) {
+            if (e.state && e.state.page === 'timeline') {
+                showTimeline(false);
+            } else {
+                showHome(false);
+            }
+        });
+
+        // Check URL on page load and show correct page
+        function initPage() {
+            if (window.location.pathname === '/timeline') {
+                showTimeline(false);
+            } else {
+                showHome(false);
+            }
+        }
+        initPage();
 
         // Parallax effect for gradient background
         window.addEventListener('scroll', () => {
